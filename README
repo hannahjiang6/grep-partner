@@ -1,0 +1,247 @@
+/**********************************************************
+* Project 4: gerp
+* CS 15
+* README
+* Author: Hannah Jiang (hjiang03) and Zachary White (zwhite03)
+*********************************************************/
+
+----------Compile/run----------
+
+    - Compile using
+        make gerp
+    - run executable with
+        ./gerp DirectoryToIndex OutputFile
+
+----------Program Purpose----------
+
+    This program is a simplified version of the search engine grep. It creates
+    a hash table that indexes a set of files. And using the index, the program
+    is able to take input from the user and respond to the different queries.
+    
+
+----------Acknowledgements----------
+
+    CS15 Lecture Slides
+    C++ Sets
+    
+----------Files----------
+    main.cpp: 
+        Runs the entire program.
+
+    gerp.cpp:
+        This is the implementation of the gerp class. It includes opening the
+        files that would eventually read the data into the hash table, the
+        query loop for users to input data into, traversing the directory, and
+        printing the data from the search into an outputFile.
+
+    gerp.h: 
+        Defines the Gerp class and its public and private member functions.
+        Holds the functions that reads the files into the hash function and
+        the main query loop for the user to input what they want to search.
+        This class uses a hash table that allows for efficient time complexity
+        to search through a whole lot of data.
+
+    hash.cpp:
+        This file stored the implementation of our hash function. It included
+        searching the hash table, inputting data into the hash table, and
+        resizing. All the functions were essential for our gerp.cpp.
+
+    hash.h:
+        Defines the Hash class and its public and private member functions.
+        Holds necessary functions to read into the hash table/store the data 
+        and functions to search through the hash function to find all of it. It
+        also included a function to resize the hash table if it ever got to 
+        the max capacity.
+
+    unit_tests.h:
+        Where we tested all the functions from phase1 (stringProcessing and
+        FSTreeTraversal). It includes multiple test cases that call the funtion
+        from stringProcessing by passing in test input and making sure that the
+        output matches the expected results (this was done by asserting the
+        expected answer). The unit_tests also includes separate function tests
+        for hash.cpp and gerp.cpp.
+
+    commands.txt:
+        Command file that we sent into our program to test different word cases
+
+    NOTE: the files below we did do but could not be submitted as they were too
+    large but they tested the commands.txt file that was provided
+
+    sg.refsort:
+        Sorted output file for ./the_gerp program for several queries
+
+    sg.sort:
+        Sorted output file for ./gerp program for several queries
+
+----------Architectural Overview----------
+    Our gerp implementation involves two classes that interact with each 
+    other. One, the Hash class, stores all of the key and value pairs, 
+    which are words and structs, respectively. The structs point to 
+    the vectors that are stored in the Gerp class. These vectors 
+    contain the contents of all of the files in the provided directory,
+    at the lines that they are in the file. At 0, the file name is stored.
+    The way these interact is that when the search function finds a set 
+    of values with the given key, it returns a pointer to that set, which
+    is iterated over, finding all of the vectors that contain that word, 
+    and the struct also contains the line with that word for instant
+    access. In summary, the Hash stores all of our key, value pairs that
+    are used to access the files that are stored in the Gerp class. 
+    The Hash class exists only to build itself and return the sets
+    of line locations, and the Gerp class takes care of the query loop and
+    the way the data structures interact. 
+
+---------Data Structures----------
+
+    Hash Table:
+        For our project we used a hash table which was a vector of lists of 
+        sets of structs. This was to secure O(1) access to elements, which
+        were the lists. The lists were in place to prevent collisions. When 
+        a collision was encountered, the element was inserted into the back
+        of the list, and to find that element, when the list is searched, 
+        it is iterated over, comparing a node's key to the query, only 
+        returning the set that matches. This does theoretically slow down
+        the searching of the table, but as the table grows, collisions will
+        be less frequent, and when the table is small, there will be few 
+        elements to iterate over. The sets within the list contain structs 
+        called lineLocs(line location). These are a pointer to a vector, as
+        well as a line number to access in that vector. Because sets cannot
+        contain duplicates, this would take care of any duplicates within
+        lines, as the dupes could not be inserted. This structure was the
+        best choice for fast time access and lack of collisions. Below
+        is a description of each element and the advantages that caused
+        us to choose them
+
+        Vector:
+            Vectors store elements of a given type in an array. They are 
+            used for their O(1) access to elements, and their time 
+            efficiency for adding members to the back. These were used
+            to store the text of files as well, as we would be only 
+            inserting elements into the back. For the hash table, 
+            we do not know where elements are inserted, but the 
+            speed of access is more important to us. 
+
+        Sets: 
+            Sets are a data structure that are used for storing elements. There
+            is a value and a key pair and each value is unique. They are stored
+            in a sorted order. The lack of duplicates allows us to not worry 
+            about duplicates in the samek line
+
+        Lists: 
+            A list is a data structure that allows for easy insertion of data
+            to the end of it. All elements are stored one after another and it
+            allows for quick access and easy modification of elements. It
+            allows for constant time insert and erase operations anywhere in
+            the list. We use this because we only insert into it, and will be
+            iterating over it to find collisions, which should be rare. 
+
+    Algorithms:
+        LineLoc comparator: 
+            To insert structs into a set, you need to compare them. We used
+            the std::tie function to compare both the line numbers and the
+            pointers. Our speed and RAM usage took a hit from this, but it
+            solved a major edge case with the same word being on the same
+            line in different files.
+
+        InsertToTable:
+            To insert to the tables, we needed different keys and structs
+            for each one. To handle this, we took in one line at a time,
+            with the number of the line. First, we stripped the word of 
+            non-alphanum chars, then ran wordHash on the result. We used
+            this to create a lineLoc value to insert, then got the 
+            lowercase word by running tolower, to make a key for the 
+            lowercase table. After this, we went into a helper AddBoth
+            function to add this value. This searches through the 
+            lists at the point in the hash corresponding to the key, 
+            then compares it to a value in it to see if it matches.
+            If there are no matches, it is added to the back of the 
+            list in a new set. If not found, it is added to a new set
+            as there are no existing copies of that word. This is then
+            done with the non sensitive table by lowercasing the 
+            key part of the lineLoc struct and adding it to its
+            corresponding table. 
+
+        search:
+            For searching through the hash table, it has to compare the
+            keys to the query that was given. The search functions searches
+            different tables depending on the boolean value (e.g. whether
+            to search through the caseTable or table). It first checks if
+            the query is empty and if it is, it returns a nullptr. If a
+            matching set is found it returns the address of the set,
+            otherwise, once again, it returns a nullptr. 
+
+----------Testing----------
+    stringProcessing:
+        For the stringProcessing function, we tested this by creating a
+        unit_tests.h file. Testing the stringProcessing function was pretty
+        straight forward because we just created strings with non
+        alphabet-numerical characters and sent it into the stringProcessing
+        function. We then used #include <cassert> to assert that the answer we
+        recieved from the function was the one that we were expecting. Once it
+        passed all different types of the tests. We were finished with the
+        stringProcessing function.
+
+    FSTreeTraversal:
+        This function was a little harder to test. It was all tested in the
+        FSTreeTraversal.cpp file. We created a main function that first checked
+        that the input was correct. We were able to test this function because
+        we created an executable for it in our Makefile. Then we created some
+        test directories (root) and copied the tinyData directory from the
+        proj4-test-dirs. We tested it and checked by making sure what was
+        printed was what we expected. On top of that in the spec, it gave us
+        the expected print out for the tinyData directory and we just compared
+        what ours printed out with the spec. Once it matched exactly how it was
+        supposed to, we were done with testing FSTreeTraversal and submitted
+        part1 of the project.
+    
+    Hash:
+        For the hash class, we tested this using our unit_tests first. Each
+        function we created we made a separate test function in unit_tests.h.
+        This allowed us to make sure that each function was working
+        independently. On top of those functions, we also used std::cerr print
+        statements through the unit_test functions and inside the actual hash
+        functions. The std::cerr print statements were deleted, but they were
+        useful for counting words/files instead of manually counting them
+        ourselves. We used it to make sure that the data was being placed into
+        the hash table properly/was the expected output. For certain functions
+        in the hash table (such as search) we also tested edge cases. Some of
+        them included an empty file and searching for a word (which obviously
+        did not exist as the file was empty) and making sure that the results
+        were null/the program didn't return anything. Another edge case that we
+        considered was having multiple/repetitive words in the same line.
+        Meaning if there was a line called, "hash hash hash" (line1), that the
+        program would only print that line once/find that line only once. 
+
+    Gerp:
+        For our gerp class, we tested our functions in the unit_tests.h file. 
+        We temporarily made all the functions public, in order for us to be
+        able to test them separately. This made it easy for us to make sure
+        that all the data and everything was being stored correctly into the
+        hash table from the file. We also used std::cerr print statements in 
+        unit_tests.h and certain gerp functions that we were having trouble
+        with. This allowed us to debug the functions quicker and afterwards we
+        deleted them. For us, the hardest part of debugging/testing gerp was
+        making sure all the files were being read correctly through our
+        functions. To test these, we had to go one by one and make sure the
+        individual functions worked correctly. Once the individual functions
+        were working we started calling multiple functions together and
+        stringing all the functions together to create a working program. 
+        After separately using unit_tests.h to test the individual functions
+        we used the_gerp program provided to us in the starter files to diff
+        against our program. We sent in multiple directories, some of which we
+        made ourselves to test the program. Once the programs diffed and
+        produced the same output, we were ready to send it into the autograder
+        to test on the big functions, such as largeGutenburg and 
+        mediumGutenburg. Some issues that we ran into while debugging were seg
+        faults. Most of it was because we forgot to initialize memory on the
+        heap or that our program was not sending back the right input. After
+        we tested the program throughly, we were done with the project. Most
+        of the program was easily testable with the unit_tests.h file, but one
+        of the biggest bugs we had was when the program would search through
+        and try to find a word that had been stripped. This took a while for us
+        to debug, and we had to make sure that each function was working
+        correctly. Once, we figured that out, our program was then done. 
+
+----------Time Spent----------
+
+    Part 1: 3 hours
+    Part 2: 24 hours
